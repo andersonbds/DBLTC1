@@ -11,6 +11,9 @@ import threading
 import time
 from datetime import datetime
 
+# Importa os handlers personalizados (isso ativa todos os handlers definidos lá)
+import handlers
+
 bot = telebot.TeleBot(TOKEN)
 db = Database()
 ranking_manager = RankingManager(db, bot, RANKING_GROUP_ID)
@@ -66,28 +69,10 @@ def cmd_menu(message):
     user_id = message.from_user.id
     bot.send_message(user_id, "Menu principal:", reply_markup=teclado_principal())
 
-@bot.message_handler(func=lambda m: m.text == "🛒 Loja")
-def loja_handler(message):
-    mostrar_loja(bot, message.chat.id, db)
-
-@bot.message_handler(func=lambda m: m.text == "👛 Carteira")
-def carteira_handler(message):
-    mostrar_carteira(bot, message.chat.id, db)
-
-@bot.message_handler(func=lambda m: m.text == "👥 Indicação")
-def indicacao_handler(message):
-    mostrar_indicacao(bot, message.chat.id, db)
-
-@bot.message_handler(func=lambda m: m.text == "📜 Registros")
-def historico_handler(message):
-    mostrar_historico(bot, message.chat.id, db)
-
-@bot.message_handler(func=lambda m: m.text == "🎮 Meu personagem")
-def meu_personagem_handler(message):
-    mostrar_personagens_comprados(bot, message.chat.id, db)
-
+# Apenas os botões extras (se não estiverem no handlers.py)
 @bot.message_handler(func=lambda m: m.text == "❓ Suporte")
 def suporte_handler(message):
     bot.send_message(message.chat.id, "Para suporte, entre em contato com: @j_anderson_bds")
 
+# Iniciar o bot
 bot.polling(none_stop=True)
