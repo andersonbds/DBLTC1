@@ -2,10 +2,10 @@ import telebot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 from config import TOKEN, ADMIN_GROUP_ID, RANKING_GROUP_ID, CANAL_LINK, GRUPO_LINK
 from database import Database
-from personagens import PersonagensManager
-from afiliados import AfiliadosManager
+from personagens import mostrar_loja, mostrar_personagens_comprados
+from afiliados import mostrar_indicacao
 from mineracao import MineracaoManager
-from pagamentos import PagamentosManager
+from pagamentos import mostrar_carteira, mostrar_historico
 from ranking import RankingManager
 import threading
 import time
@@ -13,11 +13,8 @@ from datetime import datetime
 
 bot = telebot.TeleBot(TOKEN)
 db = Database()
-personagens_manager = PersonagensManager(db)
-afiliados_manager = AfiliadosManager(db)
-mineracao_manager = MineracaoManager(db, personagens_manager)
-pagamentos_manager = PagamentosManager(db)
 ranking_manager = RankingManager(db, bot, RANKING_GROUP_ID)
+mineracao_manager = MineracaoManager(db)
 
 start_time = datetime.now()
 
@@ -25,7 +22,6 @@ def uptime():
     delta = datetime.now() - start_time
     return delta.days
 
-# Envia o ranking todo dia 00:00
 def enviar_ranking_diario():
     while True:
         now = datetime.now()
@@ -51,7 +47,6 @@ def enviar_ranking_diario():
 
 threading.Thread(target=enviar_ranking_diario, daemon=True).start()
 
-# Teclado principal
 def teclado_principal():
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row(KeyboardButton("🛒 Loja"), KeyboardButton("👛 Carteira"))
@@ -59,7 +54,6 @@ def teclado_principal():
     markup.row(KeyboardButton("🎮 Meu personagem"), KeyboardButton("❓ Suporte"))
     return markup
 
-# Comandos
 @bot.message_handler(commands=['start'])
 def cmd_start(message):
     user_id = message.from_user.id
@@ -72,35 +66,28 @@ def cmd_menu(message):
     user_id = message.from_user.id
     bot.send_message(user_id, "Menu principal:", reply_markup=teclado_principal())
 
-# Handlers de botões
 @bot.message_handler(func=lambda m: m.text == "🛒 Loja")
 def loja_handler(message):
-    from personagens import mostrar_loja
     mostrar_loja(bot, message.chat.id, db)
 
 @bot.message_handler(func=lambda m: m.text == "👛 Carteira")
 def carteira_handler(message):
-    from pagamentos import mostrar_carteira
     mostrar_carteira(bot, message.chat.id, db)
 
 @bot.message_handler(func=lambda m: m.text == "👥 Indicação")
 def indicacao_handler(message):
-    from afiliados import mostrar_indicacao
     mostrar_indicacao(bot, message.chat.id, db)
 
 @bot.message_handler(func=lambda m: m.text == "📜 Registros")
 def historico_handler(message):
-    from pagamentos import mostrar_historico
     mostrar_historico(bot, message.chat.id, db)
 
 @bot.message_handler(func=lambda m: m.text == "🎮 Meu personagem")
 def meu_personagem_handler(message):
-    from personagens import mostrar_personagens_comprados
     mostrar_personagens_comprados(bot, message.chat.id, db)
 
 @bot.message_handler(func=lambda m: m.text == "❓ Suporte")
 def suporte_handler(message):
     bot.send_message(message.chat.id, "Para suporte, entre em contato com: @j_anderson_bds")
 
-# Inicia o bot
 bot.polling(none_stop=True)
