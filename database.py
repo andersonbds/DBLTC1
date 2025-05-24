@@ -37,6 +37,17 @@ class Database:
             data TEXT
         )
         """)
+        self.cursor.execute("""
+        CREATE TABLE IF NOT EXISTS pagamentos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            tipo TEXT, -- 'pix' ou 'ltc'
+            valor REAL,
+            chave TEXT, -- chave pix ou endereço LTC
+            status TEXT DEFAULT 'pendente', -- 'pendente', 'aprovado', 'rejeitado'
+            data TEXT
+        )
+        """)
         self.conn.commit()
 
     # Usuários
@@ -44,9 +55,21 @@ class Database:
         self.cursor.execute("SELECT id FROM users WHERE id=?", (user_id,))
         if self.cursor.fetchone():
             return False
-        self.cursor.execute("INSERT INTO users (id, username, indicacao_id) VALUES (?, ?, ?)", (user_id, username, indicacao_id))
+        self.cursor.execute(
+            "INSERT INTO users (id, username, indicacao_id) VALUES (?, ?, ?)",
+            (user_id, username, indicacao_id)
+        )
         self.conn.commit()
         return True
+
+    def criar_usuario_se_nao_existir(self, user_id):
+        self.cursor.execute("SELECT id FROM users WHERE id=?", (user_id,))
+        if not self.cursor.fetchone():
+            self.cursor.execute(
+                "INSERT INTO users (id, username) VALUES (?, ?)",
+                (user_id, None)
+            )
+            self.conn.commit()
 
     def atualizar_saldo(self, user_id, valor):
         self.cursor.execute("UPDATE users SET saldo = saldo + ? WHERE id = ?", (valor, user_id))
@@ -65,15 +88,26 @@ class Database:
         self.cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
         return self.cursor.fetchone()
 
+    def obter_total_investido(self, user_id):
+        self.cursor.execute("SELECT total_investido FROM users WHERE id = ?", (user_id,))
+        res = self.cursor.fetchone()
+        return res[0] if res else 0
+
     # Personagens
     def comprar_personagem(self, user_id, personagem_id, preco):
         data_compra = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.cursor.execute("SELECT quantidade FROM personagens WHERE user_id = ? AND personagem_id = ?", (user_id, personagem_id))
         res = self.cursor.fetchone()
         if res:
-            self.cursor.execute("UPDATE personagens SET quantidade = quantidade + 1, data_compra = ? WHERE user_id = ? AND personagem_id = ?", (data_compra, user_id, personagem_id))
+            self.cursor.execute(
+                "UPDATE personagens SET quantidade = quantidade + 1, data_compra = ? WHERE user_id = ? AND personagem_id = ?",
+                (data_compra, user_id, personagem_id)
+            )
         else:
-            self.cursor.execute("INSERT INTO personagens (user_id, personagem_id, quantidade, data_compra) VALUES (?, ?, ?, ?)", (user_id, personagem_id, 1, data_compra))
+            self.cursor.execute(
+                "INSERT INTO personagens (user_id, personagem_id, quantidade, data_compra) VALUES (?, ?, ?, ?)",
+                (user_id, personagem_id, 1, data_compra)
+            )
         self.conn.commit()
 
     def listar_personagens(self, user_id):
@@ -101,3 +135,19 @@ class Database:
     def obter_historico(self, user_id):
         self.cursor.execute("SELECT tipo, valor, data FROM transacoes WHERE user_id = ? ORDER BY data DESC LIMIT 50", (user_id,))
         return self.cursor.fetchall()
+
+    # Estatísticas
+    def somar_depositos(self):
+        self.cursor.execute("SELECT SUM(valor) FROM transacoes WHERE tipo = 'deposito'")
+        res = self.cursor.fetchone()
+        return res[0] if res and res[0] else 0.0
+
+    def somar_saques(self):
+        self.cursor.execute("SELECT SUM(valor) FROM transacoes WHERE tipo = 'saque'")
+        res = self.cursor.fetchone()
+        return res[0] if res and res[0] else 0.0
+
+    def contar_pagamentos_pendentes(self):
+        self.cursor.execute("SELECT COUNT(*) FROM pagamentos WHERE status = 'pendente'")
+        res = self.cursor.fetchone()
+        return res[0] if res else 0
