@@ -96,14 +96,17 @@ class Database:
     # Personagens
     def comprar_personagem(self, user_id, personagem_id, preco):
         data_compra = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # Verifica se personagem já existe para o usuário
         self.cursor.execute("SELECT quantidade FROM personagens WHERE user_id = ? AND personagem_id = ?", (user_id, personagem_id))
         res = self.cursor.fetchone()
         if res:
+            # Incrementa quantidade e atualiza data da compra para a última
             self.cursor.execute(
                 "UPDATE personagens SET quantidade = quantidade + 1, data_compra = ? WHERE user_id = ? AND personagem_id = ?",
                 (data_compra, user_id, personagem_id)
             )
         else:
+            # Insere novo registro
             self.cursor.execute(
                 "INSERT INTO personagens (user_id, personagem_id, quantidade, data_compra) VALUES (?, ?, ?, ?)",
                 (user_id, personagem_id, 1, data_compra)
