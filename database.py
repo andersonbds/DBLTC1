@@ -114,6 +114,14 @@ class Database:
         self.cursor.execute("SELECT personagem_id, quantidade, saldo_minerado, total_minerado FROM personagens WHERE user_id = ?", (user_id,))
         return self.cursor.fetchall()
 
+    def listar_personagens_ativos(self, user_id):
+        self.cursor.execute("""
+        SELECT personagem_id, quantidade, saldo_minerado, total_minerado 
+        FROM personagens 
+        WHERE user_id = ? AND quantidade > 0
+        """, (user_id,))
+        return self.cursor.fetchall()
+
     def atualizar_mineracao(self, user_id, personagem_id, saldo_incremento, total_incremento):
         self.cursor.execute("""
         UPDATE personagens
