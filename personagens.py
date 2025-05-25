@@ -1,76 +1,60 @@
+# personagem_manager.py
+
 from datetime import datetime, timedelta
 
 class PersonagemManager:
-    MINERACAO_MENSAL_PERCENTUAL = 1.0  # 1% ao mês
+    def __init__(self, db):
+        self.db = db
+        # Exemplo de personagens com poder de mineração (GH/s) e preço
+        self.personagens = {
+            1: {"nome": "Goku", "ghs": 10, "preco": 10},
+            2: {"nome": "Vegeta", "ghs": 20, "preco": 20},
+            3: {"nome": "Gohan", "ghs": 35, "preco": 35},
+            4: {"nome": "Trunks", "ghs": 50, "preco": 50},
+            5: {"nome": "Piccolo", "ghs": 75, "preco": 75},
+            6: {"nome": "Freeza", "ghs": 100, "preco": 100},
+            7: {"nome": "Cell", "ghs": 150, "preco": 150},
+            8: {"nome": "Majin Boo", "ghs": 200, "preco": 200},
+            9: {"nome": "Bills", "ghs": 250, "preco": 250},
+            10: {"nome": "Whis", "ghs": 300, "preco": 300}
+        }
 
-    PERSONAGENS = [
-        {"id": 1, "nome": "Goku",       "preco_brl": 0.10,  "ghs": 100},
-        {"id": 2, "nome": "Vegeta",     "preco_brl": 0.20,  "ghs": 200},
-        {"id": 3, "nome": "Gohan",      "preco_brl": 0.40,  "ghs": 400},
-        {"id": 4, "nome": "Piccolo",    "preco_brl": 0.80,  "ghs": 800},
-        {"id": 5, "nome": "Trunks",     "preco_brl": 1.60,  "ghs": 1600},
-        {"id": 6, "nome": "Frieza",     "preco_brl": 3.20,  "ghs": 3200},
-        {"id": 7, "nome": "Cell",       "preco_brl": 6.40,  "ghs": 6400},
-        {"id": 8, "nome": "Majin Buu",  "preco_brl": 12.80, "ghs": 12800},
-        {"id": 9, "nome": "Broly",      "preco_brl": 25.60, "ghs": 25600},
-        {"id": 10,"nome": "Beerus",     "preco_brl": 51.20, "ghs": 51200},
-    ]
+    def obter_personagens_disponiveis(self):
+        return self.personagens
 
-    def get_personagem_by_id(self, pid):
-        for p in self.PERSONAGENS:
-            if p["id"] == pid:
-                return p
-        return None
+    def get_nome_personagem(self, personagem_id):
+        return self.personagens.get(personagem_id, {}).get("nome", "Desconhecido")
 
-    def calcular_retorno_mensal(self, preco_brl):
-        return preco_brl * (self.MINERACAO_MENSAL_PERCENTUAL / 100)
+    def get_ghs_personagem(self, personagem_id):
+        return self.personagens.get(personagem_id, {}).get("ghs", 0)
 
-    def calcular_ghs_total(self, quantidade, ghs_unitario):
-        return quantidade * ghs_unitario
+    def get_preco_personagem(self, personagem_id):
+        return self.personagens.get(personagem_id, {}).get("preco", 0)
 
-    def pode_comprar(self, user_saldo, preco):
-        return user_saldo >= preco
+    def personagem_ativo(self, user_id, personagem_id):
+        personagens = self.db.listar_personagens(user_id)
+        for p_id, qtd, _, _ in personagens:
+            if p_id == personagem_id and qtd > 0:
+                return True
+        return False
 
-    def pode_minerar_mais(self, personagem_id, total_minerado, quantidade):
-        personagem = self.get_personagem_by_id(personagem_id)
-        if not personagem:
-            return False
-        preco_total = personagem["preco_brl"] * quantidade
-        limite = preco_total * 1.3
-        return total_minerado < limite
+    def pode_minerar(self, user_id):
+        personagens = self.db.listar_personagens(user_id)
+        return len(personagens) > 0
 
-    def calcular_recompensa_intervalo(self, ghs, minutos=1):
-        fator_minuto = self.MINERACAO_MENSAL_PERCENTUAL / 100 / 43200  # 43200 min = 30 dias
-        recompensa = ghs * fator_minuto * minutos
-        return round(recompensa, 8)
+    def calcular_ghs_total(self, user_id):
+        total_ghs = 0
+        personagens = self.db.listar_personagens(user_id)
+        for personagem_id, quantidade, _, _ in personagens:
+            ghs = self.get_ghs_personagem(personagem_id)
+            total_ghs += ghs * quantidade
+        return total_ghs
 
-    def listar_personagens_texto(self):
-        texto = ""
-        for p in self.PERSONAGENS:
-            texto += f"{p['id']} - {p['nome']} - Preço: R${p['preco_brl']:.2f} - Poder: {p['ghs']} GH/s\n"
-        return texto
-
-    def mostrar_loja(self, bot, chat_id, db):
-        texto = "🛒 Loja de Personagens:\n\n" + self.listar_personagens_texto()
-        texto += "\nPara comprar, envie /comprar <id> <quantidade>.\nExemplo: /comprar 1 2"
-        bot.send_message(chat_id, texto)
-
-    def mostrar_personagens_comprados(self, bot, chat_id, db):
-        personagens = db.get_personagens_do_usuario(chat_id)
-        if not personagens:
-            bot.send_message(chat_id, "Você ainda não comprou nenhum personagem.")
-            return
-        texto = "🎮 Seus Personagens:\n\n"
-        for p in personagens:
-            texto += (f"{p['nome']} - Qtd: {p['quantidade']} - Minerado: R${p['total_minerado']:.2f}\n")
-        bot.send_message(chat_id, texto)
-
-
-# Funções globais para facilitar a importação
-def mostrar_loja(bot, chat_id, db):
-    pm = PersonagemManager()
-    pm.mostrar_loja(bot, chat_id, db)
-
-def mostrar_personagens_comprados(bot, chat_id, db):
-    pm = PersonagemManager()
-    pm.mostrar_personagens_comprados(bot, chat_id, db)
+    def personagem_bateu_limite(self, user_id, personagem_id):
+        preco = self.get_preco_personagem(personagem_id)
+        limite = preco * 1.3
+        personagens = self.db.listar_personagens(user_id)
+        for pid, _, _, total_minerado in personagens:
+            if pid == personagem_id:
+                return total_minerado >= limite
+        return False
