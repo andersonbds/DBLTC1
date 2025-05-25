@@ -15,7 +15,7 @@ from datetime import datetime
 bot = telebot.TeleBot(TOKEN)
 db = Database()
 mineracao_manager = MineracaoManager(db)
-personagem_manager = PersonagemManager()
+personagem_manager = PersonagemManager(db)  # <-- Corrigido aqui, passando db
 ranking_manager = RankingManager(db, bot, RANKING_GROUP_ID)
 
 start_time = datetime.now()
