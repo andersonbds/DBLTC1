@@ -80,5 +80,8 @@ def cmd_menu(message):
 def suporte_handler(message):
     bot.send_message(message.chat.id, "Para suporte, entre em contato com: @j_anderson_bds")
 
+#Registra os handlers do arquivo handlers.py
+handlers.register_handlers(bot)
+
 # Iniciar o bot
 bot.polling(none_stop=True)
