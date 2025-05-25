@@ -154,3 +154,6 @@ class Database:
         self.cursor.execute("SELECT COUNT(*) FROM pagamentos WHERE status = 'pendente'")
         res = self.cursor.fetchone()
         return res[0] if res else 0
+     def listar_usuarios(self):
+        cursor = self.conn.execute("SELECT id FROM users")
+        return [row[0] for row in cursor.fetchall()]
