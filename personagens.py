@@ -64,3 +64,13 @@ class PersonagemManager:
         for p in personagens:
             texto += (f"{p['nome']} - Qtd: {p['quantidade']} - Minerado: R${p['total_minerado']:.2f}\n")
         bot.send_message(chat_id, texto)
+
+
+# Funções globais para facilitar a importação
+def mostrar_loja(bot, chat_id, db):
+    pm = PersonagemManager()
+    pm.mostrar_loja(bot, chat_id, db)
+
+def mostrar_personagens_comprados(bot, chat_id, db):
+    pm = PersonagemManager()
+    pm.mostrar_personagens_comprados(bot, chat_id, db)
